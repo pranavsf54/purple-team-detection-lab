@@ -4,7 +4,7 @@ A home lab for purple team detection engineering. Build an Active Directory
 environment with intentional misconfigurations, run real attacks against it,
 and engineer detections in Wazuh with Sigma rules.
 
-> Status: in progress. Started 28/05/2026. Target completion: <28/06/2026>.
+> Status: in progress. Started 28/05/2026. Target completion: 28/06/2026.
 
 ## Goals
 
