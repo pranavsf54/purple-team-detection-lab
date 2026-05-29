@@ -216,3 +216,35 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Raw screenshots — curated copies live in diagrams/ proper
+diagrams/raw/
+
+# Secrets and credentials never to commit
+.env
+.env.*
+*.pem
+*.key
+
+# Wazuh post-install secrets
+wazuh-install-files.tar
+wazuh-install-files/
+wazuh-passwords.txt
+
+# pfSense config backups can contain hashes
+config-pfSense-*.xml
+*pfsense*config*.xml
+
+# Kerberos tickets and credentials
+*.kirbi
+*.ccache
+
+# Hashcat output (cracked passwords)
+*.potfile
+*.pot
+hashcat.potfile
+
+# Memory captures from Phase 5 forensics work
+*.mem
+*.dmp
+*.raw
