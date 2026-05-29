@@ -248,3 +248,38 @@ hashcat.potfile
 *.mem
 *.dmp
 *.raw
+
+# Raw screenshots — curated copies live in diagrams/ proper
+diagrams/raw/
+
+# Secrets and credentials never to commit
+.env
+.env.*
+*.pem
+*.key
+
+# Wazuh post-install secrets (the install script writes credentials here)
+wazuh-install-files.tar
+wazuh-install-files/
+wazuh-passwords.txt
+
+# pfSense config backups can contain credential hashes
+config-pfSense-*.xml
+*pfsense*config*.xml
+
+# Kerberos tickets and credentials (generated when running attacks)
+*.kirbi
+*.ccache
+
+# Hashcat output (cracked passwords from Phase 3+)
+*.potfile
+*.pot
+hashcat.potfile
+
+# Memory captures (Phase 5 forensics)
+*.mem
+*.dmp
+*.raw
+
+# Test artifacts that may contain captured raw events
+tests/**/captured/
