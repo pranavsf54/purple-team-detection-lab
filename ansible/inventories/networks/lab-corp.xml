@@ -1,0 +1,4 @@
+<network>
+    <name>lab-corp</name>
+    <bridge name="virbr-corp" stp="on" delay="0"/>
+</network>

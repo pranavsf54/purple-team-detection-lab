@@ -1,0 +1,4 @@
+<network>
+    <name>lab-mgmt</name>
+    <bridge name="virbr-mgmt" stp="on" delay="0"/>
+</network>

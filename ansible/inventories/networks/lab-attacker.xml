@@ -1,0 +1,4 @@
+<network>
+    <name>lab-attacker</name>
+    <bridge name="virbr-attack" stp="on" delay="0"/>
+</network>

@@ -1,0 +1,4 @@
+<network>
+    <name>lab-dmz</name>
+    <bridge name="virbr-dmz" stp="on" delay="0"/>
+</network>
