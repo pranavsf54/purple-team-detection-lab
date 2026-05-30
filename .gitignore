@@ -283,3 +283,6 @@ hashcat.potfile
 
 # Test artifacts that may contain captured raw events
 tests/**/captured/
+
+# Raw unedited screenshots (curated copies live in diagrams/ proper)
+diagrams/raw/
