@@ -264,7 +264,7 @@ wazuh-install-files/
 wazuh-passwords.txt
 
 # pfSense config backups can contain credential hashes
-config-pfSense-*.xml
+config-pfSense*.xml
 *pfsense*config*.xml
 
 # Kerberos tickets and credentials (generated when running attacks)
