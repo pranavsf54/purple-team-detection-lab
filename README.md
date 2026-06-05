@@ -1,91 +1,144 @@
-# Purple Team Detection Lab
+# Purple Team Active Directory Detection Lab
 
 ![Network topology](diagrams/network-topology.png)
 
-A self-built purple team lab where I stand up an Active Directory environment,
-attack it the way a real intruder would, and engineer the detections that catch
-each attack. Built on KVM/QEMU on a single Linux workstation. Every detection is
-written in Sigma, tested against real attack telemetry, and tuned to cut false
-positives.
 
-This project demonstrates detection engineering, SIEM operation, incident
-response, and security automation, the skills that are growing as routine alert
-triage gets automated away.
+A fully isolated, network-segmented Active Directory lab for practicing the complete
+**attack -> detect -> tune** cycle against a monitored Windows domain. Every host is built on
+KVM/libvirt, segmented behind a pfSense firewall with Suricata IDS, and monitored by a Wazuh
+SIEM. Misconfigurations are seeded deliberately, attacked from a Kali box, and then turned into
+detections — so each technique is demonstrated end to end, from adversary action to the alert
+that catches it.
 
-## Results at a glance
+## What this project demonstrates
 
-| Metric | Value |
-|--------|-------|
-| MITRE ATT&CK techniques exercised | - |
-| Techniques detected by a custom rule | - |
-| Custom Sigma rules written and tuned | - |
-| Incident response reports | - |
-| Mean time to detect (after tuning), Kerberoasting | - |
-| Detections re-implemented in Microsoft Sentinel (KQL) | - |
-
-
-## What this lab proves I can do
-
-- Build and segment a network with a firewall (pfSense), enforce least privilege
-  between zones, and route all egress through an IDS sensor (Suricata).
-- Operate a SIEM end to end (Wazuh): enroll agents, ingest Windows and Linux
-  telemetry, deploy Sysmon via Group Policy, and build dashboards.
-- Run a full Active Directory attack chain by hand: AS-REP roasting,
-  Kerberoasting, ACL abuse, DCSync, Golden Ticket.
-- Write detection logic in Sigma, convert it to the SIEM's native format, deploy
-  it, and tune out false positives.
-- Automate the boring parts in Python: alert enrichment, coverage reporting, and
-  a mini SOAR triage pipeline with an AI summarization stage.
-- Re-implement the same detections as KQL in Microsoft Sentinel, demonstrating
-  the on-prem-to-cloud transition that most enterprises are making.
+- Virtualization and infrastructure: KVM/QEMU/libvirt, isolated networks, host tuning (KSM),
+  snapshot-driven workflows.
+- Network engineering: four-zone segmentation with a single routing/IDS chokepoint.
+- Detection engineering: SIEM deployment, log pipelines, MITRE ATT&CK-mapped detections.
+- Offensive security: Active Directory attack chains (Kerberos abuse, credential theft,
+  ACL abuse) executed and understood, not just run.
+- Infrastructure as code and documentation discipline: reproducible builds, decision records.
 
 ## Architecture
 
-<!-- 2 short paragraphs describing the design. Keep it tight. -->
+pfSense is the only device that routes between zones and to the internet, which forces all
+inter-segment and egress traffic through the firewall and Suricata.
 
-The lab simulates a small company, `corp.lab.lan`, across four isolated network
-segments: a corporate network, a management network for the security tooling, a
-DMZ, and an external segment for the attacker. pfSense is the only device that
-routes between them, which means every cross-zone packet and every outbound
-connection is subject to firewall policy and IDS inspection.
+| Network | CIDR | Role | Hosts |
+|---|---|---|---|
+| `lab-corp` | 192.168.10.0/24 | Corporate LAN | DC01, WS01, LINTGT01 |
+| `lab-mgmt` | 192.168.56.0/24 | Monitoring plane | WAZUH01 |
+| `lab-dmz` | 192.168.20.0/24 | DMZ (future phase) | — |
+| `lab-attacker` | 192.168.100.0/24 | Adversary | KALI01 |
 
-Telemetry flows inward to a Wazuh SIEM on the management network. Attacks
-originate from a Kali host on the external segment and must traverse pfSense to
-reach the corporate network, generating realistic network-layer telemetry
-alongside the host-layer telemetry from Sysmon and the Wazuh agents.
+pfSense holds a gateway interface on every zone (`.1`) plus a WAN leg on libvirt's NAT network
+for egress. Full addressing is in `docs/03-build/00-networks.md`.
 
-## A detection, start to finish
+## Components
 
-![Wazuh detecting Kerberoasting](diagrams/<wazuh-kerberoast-alert>.png)
+| Host | Role | Platform |
+|---|---|---|
+| pfSense | Firewall, router, DHCP/DNS/NTP, Suricata IDS | pfSense CE |
+| WAZUH01 | SIEM, HIDS, FIM, vuln scanner | Wazuh 4.14.5 on Ubuntu 22.04 LTS |
+| DC01 | Domain controller, `corp.lab.lan` | Windows Server 2022 (2016 functional level) |
+| KALI01 | Offensive launch platform | Kali Linux 2026.1 |
+| WS01 | Domain workstation | Windows (pending documentation) |
+| LINTGT01 | Linux domain target | Linux (pending documentation) |
 
-When the `sqlsvc` service account is Kerberoasted, the domain controller logs a
-Kerberos service ticket request (Event ID 4769) with RC4 encryption, which is the
-tell. The custom Sigma rule keys on that encryption downgrade combined with a
-service account context. Full write-up:
-[docs/06-incidents/INC-001-kerberoasting.md](docs/06-incidents/INC-001-kerberoasting.md).
+## Methodology
 
-## Repository structure
+The lab runs a purple-team loop, one misconfiguration at a time:
 
-| Directory | Contents |
-|-----------|----------|
-| `docs/` | Architecture, build steps, detection engineering, incident reports |
-| `diagrams/` | Network, attack chain, and detection pipeline diagrams |
-| `sigma-rules/` | All custom detection rules |
-| `scripts/` | Python automation (enrichment, coverage, mini SOAR) |
-| `ansible/` | Infrastructure as code to rebuild the lab |
-| `reports/` | The full engagement report (PDF) |
-| `attack-navigator/` | MITRE ATT&CK coverage layer (JSON) |
+1. **Seed** a realistic weakness into the domain.
+2. **Attack** it from KALI01 as a low-privilege user, generating real adversary telemetry.
+3. **Detect** by writing or tuning a rule (Wazuh/Sigma) that catches that telemetry.
+4. **Tune** to remove false positives against the BadBlood-generated background noise.
 
-## Full engagement report
+BadBlood populates the domain with roughly 2,500 users, hundreds of groups, and randomized
+ACLs, so detections must find the planted needle without lighting up on benign accounts.
 
-The complete engagement report, written in the style of a real
-penetration test deliverable, is at
-[reports/purple-team-engagement-report.pdf](reports/purple-team-engagement-report.pdf).
+## Seeded attack surface (Phase 4 chain)
 
-## Walkthrough video
+These weaknesses are intentional and exist only inside the isolated lab. The credentials are
+deliberately weak and must never be reused anywhere.
 
-A walkthrough covering the architecture, a live attack, and the
-detection firing: (in progress).
+| # | Misconfiguration | Account / object | MITRE ATT&CK |
+|---|---|---|---|
+| 1 | Kerberoastable service account | `sqlsvc` (SPN set) | T1558.003 |
+| 2 | AS-REP roastable account | `jsmith` (no pre-auth) | T1558.004 |
+| 3 | GPP cleartext password in SYSVOL | `corp\backup-svc` | T1552.006 |
+| 4 | Weak ACL (GenericWrite) | HOLLIE_MANN -> BUDDY_MCCARTY | T1098 |
+
+## Phase roadmap
+
+| Phase | Scope | Status |
+|---|---|---|
+| 0 | Isolated libvirt networks | Complete |
+| 1 | Infrastructure build (pfSense, Wazuh, DC01, Kali) + seeded misconfigurations | Complete |
+| 2 | Wazuh agent enrollment, Sysmon, log pipeline | Planned |
+| 3 | Detection baseline + ATT&CK coverage mapping | Planned |
+| 4 | Execute the attack chain | Planned |
+| 5 | Custom Sigma/Wazuh detections + tuning | Planned |
+| 6 | Automation (IOC enrichment, mini-SOAR) + engagement report | Planned |
+
+## Repository layout
+
+```
+docs/
+  03-build/         
+    00-networks.md
+    01-pfsense.md
+    02-wazuh.md
+    03-domain-controller.md
+    04-attacker-kali.md
+  13-troubleshooting-playbook.md
+ansible/
+  inventories/networks/   
+    lab-attacker.xml
+    lab-corp.xml
+    lab-dmz.xml
+    lab-mgmt.xml
+  playbooks/
+  roles/
+diagrams/
+  raw/                 
+sigma-rules/
+  linux/
+  network/
+  windows/
+test/
+  README.md
+  sample-events/
+scripts/
+  coverage-reporter/
+  enrichment/
+  mini-soar/
+reports/
+README.md
+LICENSE
+```
+
+## Rebuilding the lab
+
+1. Define and start the four isolated networks from `ansible/inventories/networks/`.
+2. Deploy pfSense, attach a leg to each zone, apply the rules in `01-pfsense.md`.
+3. Build WAZUH01, DC01, and KALI01 per their build notes.
+4. Patch the host onto an isolated segment with a veth pair to reach the web UIs
+   (see `00-networks.md`).
+
+## Safety and scope
+
+This lab is fully isolated: no lab VM touches the internet except through pfSense, and the
+attacker zone cannot reach the monitoring plane. All credentials in this repository are
+intentionally weak lab values for seeded misconfigurations. No real secrets — host passwords,
+the Wazuh admin password, API keys, or Ansible vault material — are committed; see
+`.gitignore`.
+
+## Status
+
+Phase 1 complete: infrastructure built, misconfigurations seeded, offensive toolset in place.
+Documentation and Phase 2 (agent enrollment) are the next deliverables.
 
 ## Tech stack
 
