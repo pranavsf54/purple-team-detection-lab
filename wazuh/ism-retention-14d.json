@@ -1,0 +1,48 @@
+{
+    "policy": {
+        "policy_id": "wazuh-retention-14d",
+        "description": "Delete wazuh alert and archive indices older than 14 days",
+        "last_updated_time": 1780778720989,
+        "schema_version": 21,
+        "error_notification": null,
+        "default_state": "hot",
+        "states": [
+            {
+                "name": "hot",
+                "actions": [],
+                "transitions": [
+                    {
+                        "state_name": "delete",
+                        "conditions": {
+                            "min_index_age": "14d"
+                        }
+                    }
+                ]
+            },
+            {
+                "name": "delete",
+                "actions": [
+                    {
+                        "retry": {
+                            "count": 3,
+                            "backoff": "exponential",
+                            "delay": "1m"
+                        },
+                        "delete": {}
+                    }
+                ],
+                "transitions": []
+            }
+        ],
+        "ism_template": [
+            {
+                "index_patterns": [
+                    "wazuh-alerts-*",
+                    "wazuh-archives-*"
+                ],
+                "priority": 100,
+                "last_updated_time": 1780778720989
+            }
+        ]
+    }
+}
