@@ -134,3 +134,72 @@ chmod +x kerbrute && sudo mv kerbrute /usr/local/bin/
 ```
 
 See `docs/03-build/04-attacker-kali.md` for the full toolset.
+
+---
+
+## Endpoint telemetry (Sysmon via GPO)
+
+Deploying Sysmon to the domain workstations with the sysmon-modular config turned into a
+layered debugging session, where fixing one cause exposed the next. Sysmon (System Monitor)
+is a Microsoft Sysinternals tool that writes detailed process, network, and file events to
+the Windows Event Log; without it, the default Windows logs are too thin for real detection
+work. Each distinct problem is recorded separately below, because each has its own symptom
+and its own fix, and a future rebuild will likely hit them in the same order.
+
+### Sysmon kernel driver silently blocked by Smart App Control
+
+**Symptom.** The GPO ran, the install script executed, and the log showed it reaching the
+Sysmon install line, but Sysmon never appeared as a running service and no Sysmon events
+arrived in Wazuh. No obvious error in the script output.
+
+**Diagnosis.** Sysmon installs a kernel-mode driver to capture its telemetry. On a clean
+Windows 11 image, Smart App Control (SAC) was enabled. SAC is a Windows 11 protection that
+blocks apps and drivers it does not consider trusted, and it does so quietly, which is why
+the failure looked like nothing happening rather than a clear "blocked" message.
+
+**Fix.** Disable Smart App Control. Note the catch: once SAC is turned off it cannot be turned
+back on without reinstalling Windows, because SAC only re-enables from a fresh install in
+evaluation mode. So this is a one-way door, and it is the reason SAC should be handled at the
+very start of building a Windows 11 lab image rather than discovered mid-deployment. After
+disabling SAC, the driver installed and Sysmon events began flowing into Wazuh.
+
+### AppLocker blocking the GPO startup script
+
+**Symptom.** A GPO startup script that should have run the Sysmon install did not run at all.
+
+**Diagnosis.** AppLocker (a Windows application allow-listing feature) had script rules
+enabled, and those rules silently blocked the script from executing. AppLocker enforcement
+on scripts is easy to forget because it fails closed and quietly.
+
+**Fix.** Add an AppLocker path exception for the SYSVOL location the script runs from. SYSVOL
+is the domain-wide shared folder on the Domain Controller that every machine can read, which
+is why GPO scripts are staged there.
+
+### Zone.Identifier alternate data stream causing silent execution failure
+
+**Symptom.** Even with the script allowed to run, the downloaded Sysmon binary failed to
+execute cleanly, again with no useful error.
+
+**Diagnosis.** Files downloaded from the internet carry a Zone.Identifier alternate data
+stream, a small hidden tag Windows attaches that marks the file as "came from the internet."
+Windows treats tagged files as untrusted and can block or interfere with their execution. The
+Sysmon binary staged into SYSVOL still carried this tag.
+
+**Fix.** Unblock the file so the Zone.Identifier stream is removed before it is deployed, for
+example with `Unblock-File` in PowerShell. Any binary deployed via SYSVOL should be unblocked
+as part of staging it.
+
+### GPO Preferences scheduled task beats a startup script for this
+
+**Symptom.** Even once the above were fixed, the GPO startup-script approach was fragile and
+hard to make reliable across reboots.
+
+**Diagnosis.** For a task that needs to persist and run on boot, a GPO startup script is the
+wrong tool. A GPO Preferences scheduled task is more reliable. The trap is that the Group
+Policy Management Console GUI creates an `ImmediateTaskV2` by default, which runs once
+immediately rather than persisting across reboots.
+
+**Fix.** Author the scheduled task XML by hand as a `TaskV2` with a `BootTrigger`, so the task
+is persistent and fires on every boot. The install script lives in SYSVOL and logs to a known
+path so its success or failure can be checked after each boot. This was the approach that
+finally produced reliable Sysmon deployment with events confirmed in Wazuh.
