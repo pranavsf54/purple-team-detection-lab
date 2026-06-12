@@ -1,7 +1,5 @@
 # Linux target (LINTGT01) build notes
 
-Repo path: `docs/03-build/06-linux-target-lintgt01.md`
-
 As-built record of the Ubuntu Linux target: its domain join via SSSD, the DVWA web app, and the
 deliberately weak local account. The step-by-step lives in
 `docs/04-phase-1-infrastructure.md` Section 6; this file is the distilled record.

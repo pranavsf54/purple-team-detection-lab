@@ -1,7 +1,5 @@
 # Attacker box (KALI01) build notes
 
-Repo path: `docs/03-build/04-attacker-kali.md`
-
 These notes record the as-built offensive host: its placement on the isolated attacker
 segment, why the firewall lets it reach corp but not mgmt, and the toolset installed for the
 Phase 4 attack chain. The attack methodology itself lives in the Phase 4 notes; this file

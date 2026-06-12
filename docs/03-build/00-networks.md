@@ -1,7 +1,5 @@
 # Network and infrastructure build notes
 
-Repo path: `docs/03-build/00-networks.md`
-
 These notes record the as-built network layer: the four isolated libvirt networks, the
 addressing scheme, and how the host reaches the otherwise-isolated lab segments. The design
 rationale lives in `01-network-and-hardware.md`; this file records what was actually defined
@@ -52,11 +50,11 @@ Convention: gateway `.1`, infrastructure `.10` through `.99`, DHCP pool `.100` t
 | pfSense (OPT1) | lab-mgmt | 192.168.56.1 | static gateway |
 | pfSense (OPT2) | lab-dmz | 192.168.20.1 | static gateway |
 | pfSense (OPT3) | lab-attacker | 192.168.100.1 | static gateway |
-| DC01 | lab-corp | 192.168.10.10 | static (pending build) |
-| WS01 | lab-corp | 192.168.10.100 | DHCP reservation (pending build) |
-| LINTGT01 | lab-corp | 192.168.10.20 | static (pending build) |
+| DC01 | lab-corp | 192.168.10.10 | static |
+| WS01 | lab-corp | 192.168.10.100 | DHCP reservation |
+| LINTGT01 | lab-corp | 192.168.10.20 | static |
 | WAZUH01 | lab-mgmt | 192.168.56.10 | static |
-| KALI01 | lab-attacker | 192.168.100.50 | DHCP reservation (pending build) |
+| KALI01 | lab-attacker | 192.168.100.50 | DHCP reservation |
 
 ## Host access to isolated networks (veth pattern)
 

@@ -1,7 +1,5 @@
 # Wazuh build notes
 
-Repo path: `docs/03-build/05-wazuh.md`
-
 ## Role in the lab
 
 Wazuh is the SIEM (Security Information and Event Management platform) for the lab. It is
@@ -72,7 +70,7 @@ Management (ISM) retention policy to delete indices older than 14 to 30 days is 
 
 | Setting | Value |
 |---|---|
-| Address | 192.168.56.10/24 (intended static; confirm this is a static netplan address and not a DHCP lease from the OPT1 pool) |
+| Address | 192.168.56.10/24 (confirmed static netplan address, not a DHCP lease from the OPT1 pool) |
 | Gateway | 192.168.56.1 (pfSense lab-mgmt interface) |
 | DNS | 1.1.1.1, 9.9.9.9 (temporary external resolvers; revisit once DC01 provides internal DNS, because domain name resolution will need to point at the DC) |
 
@@ -91,12 +89,14 @@ Management (ISM) retention policy to delete indices older than 14 to 30 days is 
 chrony installed and configured to use pfSense (192.168.56.1) as its NTP source, replacing
 the default Ubuntu pool servers.
 
-Sync state: **pending verification.** During the build, pfSense was returning zero NTP replies
-(`chronyc ntpdata 192.168.56.1` showed Total RX 0), which pointed at the pfSense side rather
-than the client. Confirm with `chronyc sources -v` that the `192.168.56.1` row shows `^*`
-before relying on this box for anything time-sensitive. This must be working before DC01 is
-promoted, because Active Directory uses Kerberos and Kerberos rejects tickets when clocks
-drift more than five minutes apart. See the troubleshooting playbook for the diagnosis path.
+Sync state: **confirmed.** `chronyc sources -v` shows the `192.168.56.1` row marked `^*`,
+meaning chrony has selected pfSense as its synchronised reference source. Earlier in the
+build pfSense was returning zero NTP replies (`chronyc ntpdata 192.168.56.1` showed Total RX
+0); that was a pfSense-side problem, traced to the NTP service not being bound to the
+lab-mgmt interface, and the interface selection not persisting until it was explicitly saved.
+See the troubleshooting playbook for the full diagnosis path. Time sync matters here because
+Active Directory uses Kerberos, and Kerberos rejects tickets when clocks drift more than five
+minutes apart, so every host in the domain has to agree on the time.
 
 ## Reaching the dashboard from the host
 

@@ -1,7 +1,5 @@
 # Workstation (WS01) build notes
 
-Repo path: `docs/03-build/05-workstation-ws01.md`
-
 As-built record of the Windows 11 client: the TPM/UEFI emulation needed to install it, its
 domain join, and the user accounts on it. The step-by-step lives in
 `docs/04-phase-1-infrastructure.md` Section 4; this file is the distilled record.
