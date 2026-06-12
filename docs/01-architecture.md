@@ -1,8 +1,8 @@
 # Architecture
 
 > This document is updated as the lab is built.
-> Last updated: 29/05/2026
-> Current phase: Phase 0 (Setup)
+> Last updated: 11/06/2026
+> Current phase: Phase 2 (Defense baseline)
 
 ## What this lab is
 

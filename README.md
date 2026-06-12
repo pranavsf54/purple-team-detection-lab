@@ -43,8 +43,8 @@ for egress. Full addressing is in `docs/03-build/00-networks.md`.
 | WAZUH01 | SIEM, HIDS, FIM, vuln scanner | Wazuh 4.14.5 on Ubuntu 22.04 LTS |
 | DC01 | Domain controller, `corp.lab.lan` | Windows Server 2022 (2016 functional level) |
 | KALI01 | Offensive launch platform | Kali Linux 2026.1 |
-| WS01 | Domain workstation | Windows (pending documentation) |
-| LINTGT01 | Linux domain target | Linux (pending documentation) |
+| WS01 | Domain workstation | Windows 11 (domain-joined) |
+| LINTGT01 | Linux domain target | Ubuntu 22.04 (domain-joined, DVWA) |
 
 ## Methodology
 
@@ -74,27 +74,32 @@ deliberately weak and must never be reused anywhere.
 
 | Phase | Scope | Status |
 |---|---|---|
-| 0 | Isolated libvirt networks | Complete |
-| 1 | Infrastructure build (pfSense, Wazuh, DC01, Kali) + seeded misconfigurations | Complete |
-| 2 | Wazuh agent enrollment, Sysmon, log pipeline | Planned |
-| 3 | Detection baseline + ATT&CK coverage mapping | Planned |
-| 4 | Execute the attack chain | Planned |
-| 5 | Custom Sigma/Wazuh detections + tuning | Planned |
-| 6 | Automation (IOC enrichment, mini-SOAR) + engagement report | Planned |
+| 0 | Isolated libvirt networks, repo, diagram | Complete |
+| 1 | Infrastructure build (pfSense, Wazuh, DC01, WS01, Kali, LINTGT01) + seeded misconfigurations | Complete |
+| 2 | Wazuh agents, Sysmon via GPO, PowerShell logging, audit policy, baseline, first detection dry-run, CI harness | In progress |
+| 3 | Atomic Red Team campaign, 15+ techniques detected and tuned | Planned |
+| 4 | Full Active Directory attack chain (AS-REP, Kerberoast, ACL abuse, DCSync, Golden Ticket) | Planned |
+| 5 | Threat hunts, staged incidents, NIST 800-61 reports, Volatility 3 memory capture | Planned |
+| 5.5 | Cloud thin slice: Microsoft Sentinel trial, KQL detections, Entra ID identity detections | Planned |
+| 6 | Python automation (enrichment, coverage reporter, mini-SOAR + AI stage), Ansible | Planned |
+| 7 | README polish, PDF engagement report, walkthrough video, blog posts | Planned |
+| 8 | Full cloud phase, full identity coverage | Planned |
 
 ## Repository layout
 
 ```
 docs/
-  03-build/         
+  03-build/
     00-networks.md
     01-pfsense.md
     02-wazuh.md
     03-domain-controller.md
-    04-attacker-kali.md
+    04-workstation-ws01.md
+    05-attacker-kali.md
+    06-linux-target-lintgt01.md
   13-troubleshooting-playbook.md
 ansible/
-  inventories/networks/   
+  inventories/networks/
     lab-attacker.xml
     lab-corp.xml
     lab-dmz.xml
@@ -102,12 +107,12 @@ ansible/
   playbooks/
   roles/
 diagrams/
-  raw/                 
+  raw/
 sigma-rules/
   linux/
   network/
   windows/
-test/
+tests/
   README.md
   sample-events/
 scripts/
@@ -123,7 +128,7 @@ LICENSE
 
 1. Define and start the four isolated networks from `ansible/inventories/networks/`.
 2. Deploy pfSense, attach a leg to each zone, apply the rules in `01-pfsense.md`.
-3. Build WAZUH01, DC01, and KALI01 per their build notes.
+3. Build WAZUH01, DC01, WS01, KALI01, and LINTGT01 per their build notes.
 4. Patch the host onto an isolated segment with a veth pair to reach the web UIs
    (see `00-networks.md`).
 
@@ -137,8 +142,15 @@ the Wazuh admin password, API keys, or Ansible vault material — are committed;
 
 ## Status
 
-Phase 1 complete: infrastructure built, misconfigurations seeded, offensive toolset in place.
-Documentation and Phase 2 (agent enrollment) are the next deliverables.
+Phase 1 complete: all six VMs built, the `corp.lab.lan` domain promoted, BadBlood run, and
+the four misconfigurations seeded and documented. Phase 2 is in progress: Wazuh agents are
+enrolled and reporting, Sysmon is deployed via GPO with the sysmon-modular config and its
+events are reaching Wazuh, PowerShell Script Block and Module Logging are enabled, and the
+"Audit Directory Service Access" policy plus the domain-root SACL are in place for the Phase 4
+DCSync detection. A 48-hour baseline period is running to capture the normal noise floor
+before any attacks. Remaining Phase 2 items: close out the baseline noise-floor write-up,
+develop the first detection end to end as a dry run (Kerberoasting), and stand up the CI
+rule-testing harness.
 
 ## Tech stack
 
